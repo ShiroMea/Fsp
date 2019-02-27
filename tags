@@ -1,0 +1,96 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+BASE_H	./base.h	7;"	d
+BIN	./Makefile	/^BIN = $(prefix)\/bin$/;"	m
+CC	./Makefile	/^CC = gcc$/;"	m
+CFLAGS	./Makefile	/^CFLAGS = -Wall -fPIE -pie -DFSP_VERSION='"$(VERSION)"'$/;"	m
+CHECK_ARGUMENT	./base.h	31;"	d
+CP	./Makefile	/^CP = cp$/;"	m
+CPFLAGS	./Makefile	/^CPFLAGS =$/;"	m
+DATA_PATH	./base.c	/^char DATA_PATH[256] = "";$/;"	v
+ENABLE_COLOR	./base.c	/^bool ENABLE_COLOR = false;$/;"	v
+ENABLE_OPT	./main.c	/^static enum ENABLE_OPT {$/;"	g	file:
+FLAG_FUNC	./base.h	28;"	d
+FLAG_NOTE	./base.h	27;"	d
+HEAD	./data.c	/^INDEX *HEAD;$/;"	v
+IGNORE_CASE	./data.c	/^bool IGNORE_CASE = false;$/;"	v
+INDEX	./base.h	/^} INDEX;$/;"	t	typeref:struct:node
+INDEX_FILE	./base.h	29;"	d
+INDEX_MASK	./main.c	/^	INDEX_MASK  = 1,$/;"	e	enum:ENABLE_OPT	file:
+LIB	./Makefile	/^LIB = -lz -lshiro$/;"	m
+MAX_LINE	./data.c	/^unsigned long int MAX_LINE = 10;$/;"	v
+MEMBER	./data.c	/^unsigned long int MEMBER = 1;$/;"	v
+MKDIR	./Makefile	/^MKDIR = mkdir$/;"	m
+MKDIRFLAGS	./Makefile	/^MKDIRFLAGS = -p$/;"	m
+NAME	./Makefile	/^NAME = fsp$/;"	m
+OBJ	./Makefile	/^OBJ = main.o base.o data.o$/;"	m
+OPTARGU	./main.c	/^const char *OPTARGU[4] = {NULL};$/;"	v
+OPTARGU_INDEX	./main.c	/^enum OPTARGU_INDEX {$/;"	g	file:
+PACK_MASK	./main.c	/^	PACK_MASK   = INDEX_MASK * 2,$/;"	e	enum:ENABLE_OPT	file:
+PRINT_LINE	./base.h	50;"	d
+PRONAME	./base.c	/^char *PRONAME = NULL;$/;"	v
+RM	./Makefile	/^RM = rm$/;"	m
+RMFLAGS	./Makefile	/^RMFLAGS = -r$/;"	m
+SET_PRONAME	./base.h	39;"	d
+SUPPORT_COLOR	./base.h	44;"	d
+UPDATE_MASK	./main.c	/^	UPDATE_MASK = PACK_MASK  * 2,$/;"	e	enum:ENABLE_OPT	file:
+VERSION	./Makefile	/^VERSION = 1.0.6(Beta)$/;"	m
+browse_index	./data.c	/^int browse_index(INDEX *head)$/;"	f
+check_type	./base.c	/^mode_t check_type(const char *target,mode_t mode)$/;"	f
+color_output	./data.c	/^static int color_output(const char *output,int len,SEED color)$/;"	f	file:
+creat_index	./data.c	/^int creat_index(gzFile index_file,const INDEX *head)$/;"	f
+cut_string	./data.c	/^static const char *cut_string(char *string,int col)$/;"	f	file:
+del_emptynode	./data.c	/^int del_emptynode(INDEX *head)$/;"	f
+del_sequence	./base.c	/^const char *del_sequence(char *str)$/;"	f
+file	./base.h	/^	char    file[256];    \/* 保存数据文件位置 *\/$/;"	m	struct:node
+find_extension	./base.c	/^const char *find_extension(const char *filename)$/;"	f
+find_goto	./data.c	/^static const char *find_goto(const char *buffer)$/;"	f	file:
+find_mark	./base.c	/^int find_mark(const char *str,char mark)$/;"	f
+func	./base.h	/^	char    func[128];    \/* 数据段名称 *\/$/;"	m	struct:node
+get_func	./data.c	/^static int get_func(const char *data,char *buffer)$/;"	f	file:
+get_member	./data.c	/^static unsigned long get_member(INDEX *data,const char *name)$/;"	f	file:
+get_name	./data.c	/^static const char *get_name(INDEX *data)$/;"	f	file:
+get_note	./data.c	/^static int get_note(const char *data,char *buffer)$/;"	f	file:
+get_terminal_size	./base.c	/^const int *get_terminal_size(void)$/;"	f
+get_type	./base.c	/^const char *get_type(mode_t mode)$/;"	f
+help	./main.c	/^static int help(int status)$/;"	f	file:
+index_index	./main.c	/^	index_index = 0,$/;"	e	enum:OPTARGU_INDEX	file:
+index_recovery	./data.c	/^void index_recovery(INDEX *head)$/;"	f
+indexcmp	./data.c	/^static int indexcmp(const char *str,const char *key,\\$/;"	f	file:
+line_index	./main.c	/^	line_index,$/;"	e	enum:OPTARGU_INDEX	file:
+long_opt	./main.c	/^static const struct option long_opt[] = {$/;"	v	typeref:struct:option	file:
+main	./main.c	/^int main(int argc,char *argv[])$/;"	f
+mk_newname	./base.c	/^static int mk_newname(const char *filename,char *buffer,size_t size)$/;"	f	file:
+next	./base.h	/^	struct node *next;    \/* 下一个节点 *\/$/;"	m	struct:node	typeref:struct:node::node
+node	./base.h	/^typedef struct node {$/;"	s
+note	./base.h	/^	char    note[128];    \/* 数据段备注 *\/$/;"	m	struct:node
+offset	./base.h	/^	z_off_t offset;       \/* 数据段在文件中的偏移量 *\/$/;"	m	struct:node
+open_fd	./base.c	/^int open_fd(const char *filename,int flag)$/;"	f
+open_gz	./base.c	/^gzFile open_gz(const char *filename,const char *flag)$/;"	f
+open_index	./base.c	/^INDEX *open_index(void)$/;"	f
+opt_mask	./main.c	/^} opt_mask = 0;$/;"	v	typeref:enum:ENABLE_OPT	file:
+pack	./base.c	/^int pack(const char *filename)$/;"	f
+pack_fsp	./base.c	/^static int pack_fsp(const int txt,gzFile fsp)$/;"	f	file:
+pack_index	./main.c	/^	pack_index,$/;"	e	enum:OPTARGU_INDEX	file:
+pack_txt	./base.c	/^static int pack_txt(const int txt,gzFile fsp)$/;"	f	file:
+path_index	./main.c	/^	path_index,$/;"	e	enum:OPTARGU_INDEX	file:
+pause_output	./base.c	/^int pause_output(int *count)$/;"	f
+prefix	./Makefile	/^prefix = \/usr\/local$/;"	m
+print_info	./data.c	/^int print_info(INDEX *head)$/;"	f
+read_index	./data.c	/^INDEX *read_index(const char *filename)$/;"	f
+read_node	./data.c	/^static int read_node(const INDEX node)$/;"	f	file:
+refresh_screen	./base.c	/^void refresh_screen(const int row,const int col)$/;"	f
+resume_index	./data.c	/^INDEX *resume_index(gzFile index_file)$/;"	f
+search_argv	./data.c	/^int search_argv(INDEX *head,char *const argv[])$/;"	f
+search_index	./data.c	/^int search_index(INDEX *head,const char *key)$/;"	f
+search_node	./data.c	/^int search_node(INDEX *head,const char *key)$/;"	f
+set_datapath	./base.c	/^int set_datapath(const char *user)$/;"	f
+set_maxline	./base.c	/^void set_maxline(const char *strnum)$/;"	f
+short_opt	./main.c	/^static const char *short_opt = "i::z:ud:n:lfhv";$/;"	v	file:
+update_index	./data.c	/^int update_index(void)$/;"	f
+version	./main.c	/^static void version(void)$/;"	f	file:
+width	./data.c	/^static unsigned int width = 0; $/;"	v	file:

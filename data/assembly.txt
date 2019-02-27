@@ -1,0 +1,1828 @@
+__%ABOUT_ASSEMBLER>关于数据
+
+    #####     ##         ##
+  ##          ##         ##
+  #           ##
+  ##          ##         ##    ##   ##    ####
+    ####      #######    ##    ## ##    ##    ##
+        ##    ##    ##   ##    ####     #      #
+         #    ##    ##   ##    ##       #      #
+        ##    ##    ##   ##    ##       ##    ##
+   #####      ##    ##   ##    ##         ####
+
+文档名称:assembly.txt
+数据编写:Shiro
+联系方式:shiro_soft@163.com
+数据最后编辑日期:2018.12.07
+适用于Fsp程序在1.0以上的版本
+==================================
+[*] 这是针对IA-32平台的文档信息
+[*] 这是针对使用GNU工具链的
+[*] 这个文档中的语法格式是针对AT&T语法,不是Intel格式
+[*] 所有资料参考自Richard Blum所著的《汇编语言程序设计》
+==================================
+__%register>IA-32平台寄存器
+[通用寄存器]
+    EAX  用于操作数和结果数据的累加器
+    EBX  指向数据内存段中的数据的指针
+    ECX  字符串和循环操作的计数器
+    EDX  I/O指针
+    EDI  用于字符串操作的目标的数据指针
+    ESI  用于字符串操作的源的数据指针
+    ESP  堆栈指针
+    EBP  堆栈数据指针
+[寄存器的分割]
+    32bit    16bit    8bit
+    EAX      AX       AH|AL
+    EBX      BX       BH|BL
+    ECX      CX       CH|CL
+    EDX      DX       DH|DL
+    EDI      DI
+    ESI      SI
+    ESP      SP
+    EBP      BP
+[段寄存器]
+    CS   代码段
+    DS   数据段
+    SS   堆栈段
+    ES   附加指针段
+    FS   附加指针段
+    GS   附加指针段
+__%datatype>汇编数据类型
+[.ascii]     文本字符串
+[.asciz]     以空字符结尾的文本字符串
+[.byte]      字节值
+[.double]    双精度浮点数
+[.float]     单精度浮点数
+[.int]       32位整数
+[.long]      32位整数(和.int相同)
+[.octa]      16字节整数
+[.quad]      8字节整数
+[.short]     16位(2字节)整数
+[.single]    单精度浮点数(和.float相同)
+[范例]
+ .section .data
+msg:
+    .asciz "This is test message"
+height:
+    .int 54
+length:
+    .int 45, 56, 32
+
+__%equ>定义静态符号
+[.equ]     定义静态符号
+[范例]
+.section .data
+    .equ LINUX_SYS_CALL, 0x80
+.section .text
+.globl _start
+_start:
+     movl $1, %eax
+     movl $0, %ebx
+     int $LINUX_SYS_CALL
+
+[注意] 为了引用静态数据元素,必须在标签名称的前面使用美元符号$
+
+__%buffer>定义缓冲区
+[.comm]     声明未初始化的数据的通用内存区域
+[.lcomm]    声明未初始化的数据的本地通用内存区域
+[命令格式] .comm symbol, length
+[范例]
+.section .bss
+     .lcomm buffer,20
+
+__%suffixes>操作后缀
+[注意] 
+     GAS 汇编指令通常使用字母'b','s','w','l','q','t'为后缀,以确定操作数的大小
+     b = byte      (8-bit)
+     s = single    (32-bit floating point)
+     w = word      (16-bit)
+     l = long      (32-bit integer or 64-bit floating point)
+     q = quad      (64-bit)
+     t = ten bytes (80-bit floating point)
+
+__%mov>mov指令
+[指令格式] movx source, destination
+[指令说明] source和destination的值可以是内存地址,存储在内存中的数据值,
+           指令语句中定义的数据值,或者是寄存器。
+           其中的x可以是下面的字符:
+           l    用于32位的长字值
+           w    用于16位的字值
+           b    用于8位的字节值
+           使用mov指令有非常特殊的规则,只有某些位置可以传送给其他位置,
+           mov指令的源和目标操作数组合如下:
+           1. 把立即数据元素传送给通用寄存器
+           2. 把立即数据元素传送给内存位置
+           3. 把通用寄存器传送给另一个通用寄存器
+           4. 把通用寄存器传送给段寄存器
+           5. 把段寄存器传送给通用寄存器
+           6. 把通用寄存器传送给控制寄存器
+           7. 把控制寄存器传送给通用寄存器
+           8. 把通用寄存器传送给调试寄存器
+           9. 把调试寄存器传送给通用寄存器
+           10.把内存位置传送给通用寄存器
+           11.把内存位置传送给段寄存器
+           12.把通用寄存器传送给内存位置
+           13.把段寄存器传送给内存位置
+[范例]
+.section .data
+value:
+     .int 10
+.section .text
+.globl _start
+_start:
+     movl value, %ebx
+     movl $1, %eax
+     int $0x80
+
+__%indexed>变址内存位置
+[表达式格式] base_address(offset_address,index,size)
+[表达式说明] 内存位置由下列因素确定:
+             1.基址
+             2.添加到基址上的偏移地址
+             3.数据元素的长度
+             4.确定选择哪个数据元素的变址
+             获取的数据值位于:
+             base_address + offset_address + index * size
+             如果其中的任何值位零,就可以忽略它们(但是任然需要用逗号作为占位符)
+             offset_address和index的值必须是寄存器,但是size的值可以是数字值
+[范例]
+.section .data
+values:
+      .int 10,20,30,40
+.section .text
+.globl _start
+_start:
+      movl $1, %edi
+      movl values(,%edi,4), %ebx # ebx寄存器的值为20
+      movl $1, %eax
+      int $0x80
+
+__%indirect>间接寻址
+   当使用标签引用内存位置中包含的数据值时,
+可以通过在指令中的标签前面加上美元符号($)获得数据值的内存位置的地址.
+[TIPS] 相当于C语言中的取地址符号(&)
+movl $values, %edi
+用于把values标签引用的内存地址传送给EDI寄存器
+
+movl %ebx, (%edi)
+    这是间接寻址模式的另一半,如果EDI寄存器外面没有括号,
+那么只是把EBX寄存器中的值加载到EDI寄存器中.
+    如果EDI寄存器外面加上了括号,
+那么指令就把EBX寄存器中的值传送给EDI寄存器中包含的内存位置
+
+movl %edx, 4(%edi)
+   这条指令就把EDX寄存器中的值存放在EDI寄存器指向的位置之后4个字节的内存位置中
+movl %edx, -4(%edi)
+   也可以把它放到相反的方向
+[范例]
+.section .data
+values:
+      .int 10,20,30,40
+.section .text
+.globl _start
+_start:
+      movl $values, %edi
+      movl $100, 4(%edi)
+      movl $1, %edi
+      movl values(,%edi,4), %ebx
+      movl $1, %eax
+      int $0x80
+
+__%cmov>条件传送指令
+[指令格式] cmovx source, destination
+[指令说明] 其中x是一个字母或者是两个字母的代码,表示将触发传送操作的条件。
+           传送条件取决于EFLAGS寄存器的当前值。
+           条件传送指令使用的EFLAGS寄存器的特定位如下:
+
+           EFLAGS位        名称               描述
+           CF        进位(Carry)标志       数学表达式产生了进位或者借位
+           OF        溢出(Overflow标志     数值过大或者过小
+           PF        奇偶校验(Parity)标志  寄存器包含数学操作造成的错误数据
+           SF        符号(Sign)标志        指出结果为正还是负
+           ZF        零(Zero)标志          数学操作的结果为零
+
+          无符号条件传送指令:
+          指令对                 描述             EFLAGS状态
+          CMOVA/CMOVNBE   大于/不小于或者等于      (CF或ZF) = 0
+          CMOVAE/CMOVNB   大于或者等于/不小于      CF = 0
+          CMOVNC          无进位                   CF = 0
+          CMOVB/CMOVNAE   小于/不大于或者等于      CF = 1
+          CMOVC           进位                     CF = 1
+          CMOVBE/CMOVNA   小于或等于/不大于        (CF或ZF) = 1
+          CMOVE/CMOVZ     等于/零                  ZF = 1
+          CMOVNE/CMOVNZ   不等于/不为零            ZF = 0
+          CMOVP/CMOVPE    奇偶校验/偶校验          PF = 1
+          CMOVNP/CMOVPO   非奇偶校验/奇校验        PF = 0
+
+          带符号条件传送指令:
+          指令对                描述               EFLAGS状态
+          CMOVGE/CMOVNL   大于或者等于/不小于      (SF异或OF) = 0
+          CMOVL/CMOVNGE   小于/不大于或者等于      (SF异或OF) = 1
+          CMOVLE/CMOVNG   小于或者等于/不大于      ((SF异或OF) 或 ZF) = 1
+          CMOVO           溢出                     OF = 1
+          CMOVNO          未溢出                   OF = 0
+          CMOVS           带符号(负)               SF = 1
+          CMOVNS          无符号(非负)             SF = 0
+[范例]
+.section .text
+.globl _start
+_start:
+      movl $10, %eax
+      movl $20, %ebx
+      cmp  %eax, %ebx
+      cmova %eax, %ebx
+      movl $1, %eax
+      int $0x80
+
+__%eflags>EFLAGS状态
+fsp:goto cmov
+
+__%xchg>数据交换指令
+[指令格式] xchg operand1, operand2
+[指令说明] operand1或者operand2可以是通用寄存器,也可以是内存位置.
+           但是两者都不能是内存位置
+           可以对任何通用8位,16位,32位使用这个命令,但是两个操作数的长度必须相同
+           当一个操作数是内存位置时,处理器的LOCK信号被自动标明.
+           防止在交换过程中任何其他处理器访问这个位置.
+[范例]
+.section .text
+.globl _start
+_start:
+    movl $10, %eax
+    movl $1, %ebx
+    xchg %eax, %ebx
+    int $0x80
+
+__%bswap>数据交换指令
+[指令格式] bswap operand
+[指令说明] BSWAP指令反转寄存器中字节的顺序
+           第0~7位和第24~31位进行交换,第8~15位和第16~23位交换
+           位的顺序没有被反转,被反转的是寄存器中包含的各个字节
+           这样就从小尾数(little-endiand)的值生成了大尾数(big-endian)的值
+           反之亦然
+[范例]
+.section .text
+.globl _start
+_start:
+    movl $0x12345678,%ebx
+    bswap %ebx # 交换后的值为 0x78563412
+    movl $1, %eax
+    int $0x80
+
+__%xadd>数据交换指令
+[指令格式] xadd source, destination
+[指令说明] XADD指令用于交换两个寄存器或内存位置和寄存器的值,然后把两个值相加
+           然后把相加的结果存储在目标位置(寄存器或者内存位置)
+           source必须是寄存器,destination可以是寄存器,也可以是内存位置
+           并且destination包含相加的结果
+           寄存器可以是8位、16位、32位寄存器,XADD指令从80486处理器开始可用
+[范例]
+.section .text
+.globl _start
+_start:
+   movl $9, %eax
+   movl $1, %ebx
+   xadd %eax, %ebx
+   int $0x80
+
+__%cmpxchg>数据交换指令
+[指令格式] cmpxchg source, destination
+[指令说明] CMPXCHG指令比较目标目标操作数和EAX,AX或者AL中的值。
+           如果两个值相等,就把源操作数的值加载到目标操作数中。
+           如果两个值不相等,就把目标操作数加载到EAX,AX或者AL寄存器中。
+           CMPXCHG指令在早于80486之前的处理器上是不可用的。
+           目标操作数可以是8位、16位或者32位寄存器,或者是内存位置
+           源操作数必须是长度和目标操作数匹配的寄存器
+[范例]
+.section .data
+data:
+    .int 10
+.section .text
+.globl _start
+_start:
+    movl $10, %eax
+    movl $5,  %ebx
+    cmpxchg %ebx, data # data 的值由10变为5
+    movl $1, %eax
+    int $0x80
+
+__%cmpxchg8b>数据交换指令
+[指令格式] cmpxchg8b destination
+[指令说明] 该指令处理8字节值，早于奔腾处理器的IA-32处理器不支持这条指令。
+           destination操作数引用一个内存位置,其中的8字节值会与EDX和EAX寄存器
+           中包含的值进行比较(EDX是高位寄存器,EAX是低位寄存器)
+           如果目标值和EDX:EAX寄存器对中包含的值匹配,就把位于ECX:EBX寄存器对
+           中的64位值传送给目标内存位置
+           如果不匹配,就把目标内存位置地址中的值加载到EDX:EAX寄存器对中
+
+__%push>堆栈压入
+[指令格式] pushx source
+[指令说明] 把新的数据项目存到堆栈中称为压入
+           其中x是一个字符代码,表示数据长度,source是要放入堆栈的数据元素
+           可以对其进行PUSH操作的数据元素如下:
+           16位寄存器值
+           32位寄存器值
+           16位内存值
+           32位内存值
+           16位段寄存器
+           16位立即数
+           32位立即数
+           用于表示数据长度的字符和MOV指令中是一样的格式
+           但是只能对16位和32位数据进行PUSH操作
+           l用于长字(32位)
+           w用于字(16位)
+           长度代码必须和指令中声明的数据元素匹配,否则会发生错误
+
+__%pop>堆栈弹出
+[指令格式] popx destination
+[指令说明] POP指令从堆栈中获取数据
+           其中x是一个字符代码,表示数据元素长度,destination是接收数据的位置
+           通过POP指令可以使用下面的数据元素接收数据:
+           16位寄存器
+           16位段寄存器
+           32位寄存器
+           16位内存位置
+           32位内存位置
+
+__%jmp>跳转指令
+[指令格式] jmp location
+[指令说明] 其中location是要跳转到的内存地址
+[范例]
+.section .text
+.globl _start
+_start:
+    movl $1, %eax
+    jmp overhere
+    movl $10, %ebx
+    int $0x80
+overhere:
+    movl $20, %ebx
+    int $0x80
+
+__%call>调用
+[指令格式] call address
+[指令说明] address操作数引用程序中的标签,
+           它被转换为函数中的第一条指令的内存地址
+[范例]
+.section .data
+output:
+     .asciz "Hello,world\n"
+.section .text
+.globl _start
+_start:
+     pushl $output
+     call printf
+     addl $4, %esp
+     pushl $0
+     call exit
+
+[提示] 连接时需要参数 ld -o a.out -lc --dynamic-linker /lib/ld-linux.so
+
+__%jxx>条件跳转指令
+[指令格式] jxx address
+[指令说明] 条件跳转按照EFLAGS寄存器的当前值来确定是否跳转
+           几种不同的条件跳转指令使用EFLAGS寄存器的不同位
+           其中xx是1到3个字符的条件代码,address是程序要跳转到的位置
+           下面介绍所有可用的条件跳转指令:
+
+           指令               描述                       EFLAGS
+           JA       如果大于(above),则跳转           CF = 0与ZF = 0
+           JAE      如果大于(above)或等于,则跳转     CF = 0
+           JB       如果小于(below),则跳转           CF = 1
+           JBE      如果小于(below)或等于,则跳转     CF = 1或ZF = 1
+           JC       如果进位,则跳转                  CF = 1
+           JCXZ     如果CX寄存器为0,则跳转
+           JECXZ    如果ECX寄存器为0,则跳转
+           JE       如果相等,则跳转                  ZF = 1
+           JG       如果大于(greater),则跳转         ZF = 0与SF = OF
+           JGE      如果大于(greater)或等于,则跳转   SF = OF
+           JL       如果小于(less),则跳转            SF <> OF
+           JLE      如果小于(less)或等于,则跳转      ZF = 1或SF <> OF
+           JNA      如果不大于(above),则跳转         CF = 1或ZF = 1
+           JNAE     如果不大于(above)或等于,则跳转   CF = 1
+           JNB      如果不小于(below),则跳转         CF = 0
+           JNBE     如果不小于(below)或等于,则跳转   CF = 0或ZF = 0
+           JNC      如果无进位,则跳转                CF = 0
+           JNE      如果不等于,则跳转                ZF = 0
+           JNG      如果不大于(greater),则跳转       ZF = 1或SF <> OF
+           JNGE     如果不大于(greater)或等于,则跳转 SF <> OF
+           JNL      如果不小于(less),则跳转          SF = OF
+           JNLE     如果不小于(less)或等于,则跳转    ZF = 0与SF = OF
+           JNO      如果不溢出,则跳转                OF = 0
+           JNP      如果不奇偶校验,则跳转            PF = 0
+           JNS      如果无符号,则跳转                SF = 0
+           JNZ      如果非零,则跳转                  ZF = 0
+           JO       如果溢出,则跳转                  OF = 1
+           JP       如果奇偶校验,则跳转              PF = 1
+           JPE      如果偶校验,则跳转                PF = 1
+           JPO      如果奇校验,则跳转                PF = 0
+           JS       如果带符号,则跳转                SF = 1
+           JZ       如果为零,则跳转                  ZF = 1
+
+           对于计算无符号整数值,跳转指令使用above和below关键字
+           对于带符号整数值,使用greater和less关键字
+[范例]
+[参考cmp指令中的范例]
+
+__%cmp>比较指令
+[指令格式] cmp operand1, operand2
+[指令说明] 比较指令是为进行条件跳转而比较两个值的最常见的途径
+           CMP指令把第二个操作数和第一个操作数进行比较
+           在幕后,它对两个操作数执行减法操作(operand2-operand1)
+           比较指令不会修改这两个操作数,但是如果发生减法操作就设置EFLAGS寄存器
+[范例]
+.section .text
+.globl _start
+_start:
+     movl $10, %eax
+     movl $15, %ebx
+     cmp  %eax, %ebx
+     movl $1, %eax
+     jg overhere
+     movl $1, %ebx
+     int $0x80
+overhere:
+     movl $2, %ebx
+     int $0x80
+
+__%add>加法指令
+[指令格式] addx source, destination
+[指令说明] ADD指令用于把两个整数相加
+           其中source可以是立即值、内存位置或是寄存器
+           destination参数可以是寄存器或是内存位置中存储的值
+           但是不能同时使用内存位置作为源和目标
+           加法的结果存放在目标位置
+           其中的字母x表示数据的长度(可以参考mov指令)
+[范例]
+.section .data
+value:
+    .int 50
+.section .text
+.globl _start
+_start:
+    movl $1, %eax
+    movl $50, %ebx
+    addl value, %ebx
+    int $0x80
+
+__%adc>加法指令
+[指令格式] adc source, destination
+[指令说明] 可以使用ADC指令执行两个无符号或者带符号整数值的加法
+           并且把前一个ADD指令产生的进位标志的值包含在其中
+           其中source可以是立即值或者8位、16位或者32位寄存器或内存位置
+           destination可以是8位、16位或者32位寄存器或内存位置
+           但是不能同时使用内存位置作为源和目标
+           GNU汇编器要求在助记符中用附加的字符来表明操作数的长度
+           (关于长度字符参考mov指令)
+[范例]
+# 演示32位0x11223344和0xaabbccdd相加的结果
+.section .data
+value1:
+     .int 0x11223344
+value2:
+     .int 0xaabbccdd
+result:
+     .int 0
+output:
+     .asciz "The result is %x\n"
+.section .text
+.globl _start
+_start:
+     # 此处没有使用32位的寄存器而使用16位的寄存器进行计算
+     movw value1, %ax    # 0x3344
+     movw value1+2, %bx  # 0x1122
+     movw value2, %cx    # 0xccdd
+     movw value2+2, %dx  # 0xaabb
+     addw %ax, %cx       # 0x10021 进位后为 0x0021
+     adcw %bx, %dx       # 0xbbdd  添加addw的进位后为 0xbbde
+     movw %cx, result    # 0x00000021
+     movw %dx, result+2  # 0xbbde0021
+     pushl result
+     pushl $output
+     call printf
+     addl $8, %esp
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%sub>减法指令
+[指令格式] sub source, destination
+[指令说明] 其中从destination的值中减去source的值,结果存储在destination中
+           源操作数和目标操作数可以是8位、16位或者32位寄存器或存储在内存中的值
+           但是不能同时使用内存位置作为源和目标,源值也可以是立即数
+           GNU汇编器要求在助记符中用附加的字符来表明操作数的长度
+           (关于长度字符参考mov指令)
+[范例]
+.section .text
+.globl _start
+_start:
+     movl $10, %ebx
+     movl $5, %eax
+     subl %eax, %ebx
+     movl $1, %eax
+     int $0x80
+
+__%sbb>减法指令
+[指令格式] sbb source, destination
+[指令说明] 和加法操作一样,可以使用进位情况帮助执行大的无符号整数值的减法操作
+           SBB指令在多字节减法操作中利用进位和溢出标志实现跨越数据边界的借位
+           特性
+           其中进位位被添加到source值然后从destination值中减去source值得到结果
+           结果存储在destination位置中
+           源操作数和目标操作数可以是8位、16位或者32位寄存器或存储在内存中的值
+           但是不能同时使用内存位置作为源和目标,源值也可以是立即数
+           GNU汇编器要求在助记符中用附加的字符来表明操作数的长度
+           (关于长度字符参考mov指令)
+[范例]
+.section .data
+value1:
+     .int 0xaabbccdd
+value2:
+     .int 0x55667788
+result:
+     .int 0
+output:
+     .asciz "The result is %x\n"
+.section .text
+.globl _start
+_start:
+     movw value1, %ax   # 0xccdd
+     movw value1+2, %bx # 0xaabb
+     movw value2, %cx   # 0x7788
+     movw value2+2, %dx # 0x5566
+     subw %ax, %cx      # 0xaaab
+     sbbw %bx, %dx      # 0xaaab subw借位后为 0xaaaa
+     movw %cx, result   # 0x0000aaab
+     movw %dx, result+2 # 0xaaaaaaab
+     pushl result
+     pushl $output
+     call printf
+     addl $8, %esp
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%inc>递增指令
+[指令格式] inc destination
+           dec destination
+[指令说明] INC和DEC指令用于对无符号整数值进行递增(INC)和递减(DEC)操作
+           INC和DEC指令不会影响进位标志,所以可以递增或者递减计数器值
+           并且不会影响程序循环中涉及进位标志的任何其他加法或者减法操作
+           其中destination可以是8位、16位或者32位寄存器，或者内存中的值
+[范例]
+.section .text
+.globl _start
+_start:
+      movl $5, %eax
+      inc %eax  # 6
+      dec %eax  # 5
+      pushl %eax
+      pushl $output
+      call printf
+      addl $8, %esp
+      pushl $0
+      call exit
+
+__%dec>递减指令
+fsp:goto inc
+
+__%mul>无符号整数乘法指令
+[指令格式] mul source
+[指令说明] 其中source可以是8位、16位或者32位寄存器或内存位置
+           目标位置总是使用EAX寄存器的某种,形式这取决于源操作数的长度
+           根据源操作数的值的长度,乘法操作中使用的另一个操作数必须存放在
+           AL、AX或者EAX寄存器中
+           由于乘法可能产生很大的值,所以MUL指令的目标位置必须是源操作数的两
+           倍长度
+           如果源值是8位,那么目标位置是AX寄存器,因为结果是16位
+           当源操作数是16位时,EAX寄存器不被用于保存32位结果
+           Intel使用DX:AX寄存器对保存32位乘法结果值(为了向下兼容老式处理器)
+           结果的高位字存储在DX寄存器中,低位字存储在AX寄存器中
+           对于32位源值,目标位置使用64位EDX:EAX寄存器对
+           高位双字存储在EDX寄存器中,低位双字在EAX寄存器中
+
+           源操作数长度         目标操作数        目标位置
+              8位                  AL                AX
+             16位                  AX               DX:AX
+             32位                 EAX              EDX:EAX
+
+           GNU汇编器要求在助记符中用附加的字符来表明操作数的长度
+           (关于长度字符参考mov指令)
+[范例]
+.section .data
+value:
+     .int 5
+output:
+     .asciz "The result is %d\n"
+.section .text
+.globl _start
+_start:
+     movl $5, %eax
+     mull value
+     pushl %edx
+     pushl %eax
+     pushl $output
+     call printf
+     addl $12, %esp
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%imul>带符号整数乘法指令
+[指令格式] imul source
+           imul source, destination
+           imul multiplier, source, destination
+[指令说明] MUL指令只能用于无符号整数,而IMUL指令可以用于带符号和无符号整数
+           但是必须小心结果不使用目标的最高有效位
+           对于较大的值,IMUL指令只对带符号整数是合法的
+
+           第一种格式中source操作数可以是8位、16位或者32位寄存器或内存中的值
+           它与位于AL、AX或者EAX寄存器(取决于源操作数的长度)中的隐含操作数相乘
+           结果被存放到AX寄存器、DX:AX寄存器对或者EDX:EAX寄存器对中
+           (行为与MUL指令完全一样)
+
+           第二种格式中source可以是16或者32位寄存器或内存位置中的值
+           destination必须是16位或者32位通用寄存器
+           这种格式允许指定把乘法操作的结果存放到哪个位置
+           这种格式的缺陷在于乘法操作的结果被限制为单一目标寄存器的长度
+           使用这种格式时必须非常小心,不要溢出目标寄存器
+
+           第三种格式其中multiplier是一个立即值,source是16位或者32位寄存器或
+           内存中的值,destination必须是通用寄存器
+           这种格式允许执行一个值(source)和一个带符号数(multiplier)的快速乘法
+           操作,把结果存储到通用寄存器(destination)中
+
+           GNU汇编器要求在助记符中用附加的字符来表明操作数的长度
+           (关于长度字符参考mov指令)
+[范例]
+.section .data
+value:
+     .int -5
+result:
+     .quad 0
+output:
+     .asciz "The result is %d\n"
+.section .text
+.globl _start
+_start:
+# 第一种格式
+     movl $40, %eax
+     imull value
+     movl %eax, result
+     movl %edx, result+4
+     pushl result  # result = -200
+     pushl $output
+     call printf
+     addl $12, %esp
+
+# 第二种格式
+     movl $10, %eax
+     imull value, %eax
+     pushl %eax    # %eax = -50
+     pushl $output
+     call printf
+     addl $8, %esp
+
+# 第三种格式
+     imull $-6, value, %ebx
+     pushl %ebx    # %ebx = 30
+     pushl $output
+     call printf
+     addl $8, %esp
+
+done:
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%div>无符号整数除法指令
+[指令格式] div divisor
+[指令说明] 其中divisor(除数)是隐含的被除数要除以的值,它可以是8位、16位或者32位
+           寄存器或内存位置中的值
+           在执行div指令之前,被除数必须已经存储到了AX寄存器(对于16位值)、
+           DX:AX寄存器对(对于32位值)或者EDX:EAX寄存器对(对于64位值)
+           允许的除数最大值取决于被除数的长度
+           对于16位被除数,除数只能是8位
+           对于32位被除数,除数只能是16位
+           对于64位被除数,除数只能是32位
+           除法的结果是两个单独的数字:商和余数
+           这两个值都存储在被除数值使用的相同寄存器中
+
+           被除数          被除数长度        商       余数
+            AX                16位           AL        AH
+           DX:AX              32位           AX        DX
+          EDX:EAX             64位          EAX       EDX
+
+
+           GNU汇编器要求在助记符中用附加的字符来表明操作数的长度
+           (关于长度字符参考mov指令)
+[范例]
+.section .data
+value:
+     .int 60
+output:
+     .asciz "The result is %d.%d\n"
+.section .text
+.globl _start
+_start:
+     movw value, %ax   # 60
+     movw value+2, %dx # 0
+     movw $8, %bx      # 8
+     divw %bx
+     movzx %dx, %edx   # 4
+     movzx %ax, %eax   # 7
+     pushl %edx
+     pushl %eax
+     pushl $output
+     call printf
+     addl $12, %esp
+
+done:
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%idiv>带符号整数除法指令
+[指令格式] idiv divisor
+[指令说明] IDIV指令的使用方式和DIV指令完全一样,但它是用于带符号整数的除法操作
+           它也使用隐含的被除数,被除数位于AX寄存器、DX:AX寄存器对或者EDX:EAX
+           寄存器对中
+           其中的divisor可以是8位、16位或者32位寄存器或内存位置中的值
+           IDIV指令把结果返回和DIV指令相同的寄存器中
+           并且商和余数的格式是相同的(除了结果是带符号整数之外)
+           (对于带符号整数的除法,余数的符号总是与被除数的符号相同)
+[范例]
+.section .data
+value:
+     .int 60
+output:
+     .asciz "The result is %d.%d\n"
+.section .text
+.globl _start
+_start:
+     movw value, %ax   # 60
+     movw value+2, %dx # 0
+     movw $-8, %bx     # -8
+     idivw %bx
+     movsx %dx, %edx   # 4
+     movsx %ax, %eax   # -7
+     pushl %edx
+     pushl %eax
+     pushl $output
+     call printf
+     addl $12, %esp
+
+done:
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%sal>算数左移位指令
+[指令格式] sal destination
+           sal %cl, destination
+           sal shifter, destination
+[指令说明] 该指令分为SAL(向左算数移位)和SHL(向左逻辑移位)
+           这两个指令执行相同的操作,并且是可以互换的
+           第一种格式把destination的值向左移1位,等同于使值乘以2
+           第二种格式把destination的值向左移CL寄存器中指定的位数
+           第三种格式把destination的值向左移shifter值指定的位数
+           在所有的格式中目标操作数可以是8位16位或者32位寄存器或内存位置中的值
+           GNU汇编器要求在助记符中用附加的字符来表明操作数的长度
+           (关于长度字符参考mov指令)
+           可以对带符号和无符号整数执行向左移位指令,移位造成的空位用零填充
+           移位造成的超出数据长度的任何位首先被存放在进位标志中
+           然后在下一次移位操作中被丢弃
+[范例]
+.section .data
+value:
+     .int 2
+output:
+     .asciz "The value is %d -> %d\n"
+.section .text
+.globl _start
+_start:
+     movl value, %eax  # 2  10
+
+     # 第一种格式
+     sall %eax         # 4  100
+
+     # 第二种格式
+     movb $2, %cl
+     sall %cl, %eax    # 16 10000
+
+     # 第三种格式
+     sall $2, %eax     # 64 1000000
+     pushl %eax
+     pushl value
+     pushl $output
+     call printf
+     addl $12, %esp
+
+done:
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%shl>逻辑左移位指令
+fsp:goto sal
+
+__%sar>算数右移位指令
+[指令格式] sar/shr destination
+           sar/shr %cl, destination
+           sar/shr shifter, destination
+[指令说明] SHR指令清空移位造成的空位,所以它只能用于对无符号整数进行移位操作
+           SAR指令根据整数的符号位,要么清空,要么设置移位造成空位
+           对于负数,空位被设置为1,但是对于正数,它们被清空为0
+           和向左移位指令一样,向右移位指令把位移出数据元素
+           移出数据元素的任何位(最低有效位)首先被移动到进位标志
+           然后移出去(丢弃)
+[范例]
+.section .data
+value:
+     .byte -128
+output:
+     .asciz "The value is %d -> %d\n"
+.section .text
+.globl _start
+_start:
+     movb value, %al  # -128  10000000
+     sarb %al         # -64   11000000
+     movb $2, %cl
+     shrb %cl, %al    #  48   00110000 shrb用零填充了符号位
+     sarb $2, %al     #  12   00001100
+
+     movsx %al, %eax
+     movb value, %bl
+     movsx %bl, %ebx
+     pushl %eax
+     pushl %ebx
+     pushl $output
+     call printf
+     addl $12, %esp
+
+done:
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%shr>逻辑右移位指令
+fsp:goto sar
+
+__%rol>循环移位指令
+[指令介绍] 指令           描述
+           ROL            向左循环移位
+           ROR            向右循环移位
+           RCL            向左循环移位,并且包含进位标志
+           RCR            向右循环移位,并且包含进位标志
+[指令说明] 循环移位指令执行的功能和移位指令一样,只不过溢出位被存放回值的另一端
+           而不是被丢弃
+           例如,字节值的向左循环移位操作获得第7位中的值,并且把它存放到第0位的
+           位置,其他每个位的位置向左移动1位
+           最后两条指令使用进位标志作为附加位的位置,来支持9位移位
+           循环移位指令的格式和移位指令相同,提供三中选择
+           1.单一操作数:必须按照指定的方向把它移动1位
+           2.两个操作数:指定循环次数的%CL寄存器和目标数
+           3.两个操作数:指定循环次数的立即值和目标操作数
+[范例]
+[参考sal指令中的范例]
+
+__%ror>循环移位指令
+fsp:goto rol
+
+__%rcl>循环移位指令
+fsp:goto rol
+
+__%rcr>循环移位指令
+fsp:goto rol
+
+__%movs>movs字符串传送指令
+[指令格式] movsb 传送一个字节
+           movsw 传送一个字(2字节)
+           movsl 传送一个双字(4字节)
+[指令说明] MOVS指令使用隐含的源和目标操作数
+           隐含的源操作数是ESI寄存器,它指向源字符串的内存位置
+           隐含的目标操作数是EDI寄存器,它指向字符串要被复制的目标内存位置
+           源  :ESI 中的字母s代表(source)
+           目标:EDI 中的字母d代表(destination)
+[范例]
+.section .data
+strings:
+      .ascii "Hello,world\n"
+length:
+      .int 12  # 字符串的长度
+.section .bss
+      .lcomm buffer,13
+.section .text
+.globl _start
+_start:
+      leal strings, %esi
+      leal buffer, %edi
+      movl length, %ecx
+      cld
+      rep movsb
+      pushl $buffer
+      call printf
+      addl $4, %esp
+      pushl $0
+      call exit
+
+__%rep>rep指令前缀
+[指令格式] rep instruction
+[指令说明] 这条指令用于按照特定次数重复指令字符串指令由ECX寄存器中的值进行控制
+           REP指令重复地执行紧跟在它后面的字符串指令,直到ECX寄存器中的值为零
+           其他的rep指令
+           指令             描述
+           REPE             等于时重复
+           REPNE            不等于时重复
+           REPNZ            不为零时重复
+           REPZ             为零时重复
+[范例]
+[参考movs指令中的范例]
+
+__%lods>lods指令
+[指令格式] lodsb 把一字节加载到AL寄存器中
+           lodsw 把一个字(2字节)加载到AX寄存器中
+           lodsl 把一个双字(4字节)加载到EAX寄存器中
+[指令说明] LODS指令使用ESI寄存器作为隐含的源操作数
+           ESI寄存器必须包含要加载的字符串所在的内存地址
+           数据传送完成后,LODS指令按照加载的数据的数量递增或者递减ESI寄存器
+[范例]
+[参考stos指令中的范例]
+
+__%stos>stos指令
+[指令格式] stosb 存储AL寄存器中一个字节的数据
+           stosw 存储AX寄存器中一个字(2字节)的数据
+           stosl 存储EAX寄存器中一个双字(4字节)的数据
+[指令说明] 使用LODS指令把字符加载到EAX寄存器之后可以使用STOS指令把它存放到另
+           一个内存位置中
+           STOS指令使用EDI寄存器作为隐含的目标操作数
+[范例]
+.section .data
+value:
+     .byte '6'
+output:
+     .asciz "%s\n"
+.section .bss
+     .lcomm buffer,7
+.section .text
+.globl _start
+_start:
+     leal value, %esi
+     leal buffer, %edi
+     movl $6, %ecx
+     lodsb
+     rep stosb
+     pushl $buffer
+     pushl $output
+     call printf
+     addl $8, %esp
+     pushl $0
+     call exit
+
+__%cmps>cmps字符串比较指令
+[指令格式] cmpsb  比较字节值
+           cmpsw  比较字(2字节)值
+           cmpsl  比较双字(4字节)值
+[指令说明] 该指令使用隐含的源和目标操作数的位置同样存储在ESI和EDI寄存器中
+           每次执行CMPS指令时,根据DF标志的设置,ESI和EDI寄存器按照被比较的数据
+           的长度递增或者递减
+           CMPS指令从源字符串中减去目标字符串,并且适当的设置EFALGS寄存器的进位
+           符号、溢出、零、奇偶校验、和辅助进位标志
+           CMPS指令执行之后,可以根据字符串的值使用一般的条件跳转指令跳转到分支
+[范例]
+.section .data
+string1:
+      .ascii "TEST"
+string2:
+      .ascii "TESt"
+.section .text
+.globl _start
+_start:
+      leal string1, %esi
+      leal string2, %edi
+      movl $1, %eax
+      cld
+      cmpsl
+      jne fail
+      movl $0, %ebx
+      int $0x80
+fail:
+      movl $1, %ebx
+      int $0x80
+
+__%scas>scas字符串搜索指令
+[指令格式] scasb 比较内存中的一个字节和AL寄存器的值
+           scasw 比较内存中的一个字和AX寄存器的值
+           scasl 比较内存中的一个双字和EAX寄存器的值
+[指令说明] SCAS指令使用EDI寄存器作为隐含的目标操作数
+           EDI寄存器必须包含要扫描的字符串的内存地址
+           和其他字符串指令一样,当执行SCAS指令时,EDI寄存器的值按照搜索字符的
+           数据长度递增或者递减(取决于DF标志)
+           进行比较时,会相应地设置EFALGS的辅助进位、进位、奇偶检验、溢出、符号
+           和零标志
+           可以使用标准的条件分支指令检查扫描的结果
+[范例]
+.section .data
+strings:
+      .asciz "This is test strings\n"
+.section .text
+.globl _start
+start:
+      leal strings, %edi
+      movl $0xffff, %ecx
+      movb $0, %al
+      cld
+      repne scasb
+      subw $0xffff, %cx
+      neg %cx
+      decw %cx
+      movl $1, %eax
+      movl %ecx, %ebx
+      int $0x80
+
+__%asm>asm内联汇编
+[asm 格式] asm("assembly code")
+           asm("assembly code":output locations:\
+                input locations:chagned registers)
+[asm 说明] 第一种为asm基本格式,第二种为asm拓展格式
+           在基本asm格式中,汇编代码只能通过C全局变量整合输入值和输出值
+           拓展asm格式由4部分构成,使用冒号分割
+           1.汇编代码:使用和基本asm格式相同的语法的内联汇编代码
+           2.输出位置:包含内联汇编代码的输出值的寄存器和内存位置的列表
+           3.输入操作数:包含内联汇编代码的输入值的寄存器和内存位置的列表
+           4.改动的寄存器:内联代码改变的任何其他寄存器的列表
+           在拓展asm格式中,并不是所有这些部分都必须出现
+           如果汇编代码不生成输出值,这个部分就必须为空
+           但是必须使用两个冒号把汇编代码和输入操作数分割开
+           如果内联汇编代码不改动寄存器的值,那么可以忽略最后的冒号
+
+           在拓展格式中,可以从寄存器和内存位置给输入值和输出值赋值
+           输入值和输出值列表的格式是:
+           "constraint"(variable)
+           其中variable是程序中声明的C变量
+           在拓展asm格式中,局部和全局变量都可以使用
+           constraint定义把变量存放到哪里(对于输入值)或者从哪里传送变量(对于输
+           出值)
+           使用它定义把变量存放在寄存器中还是内存位置中
+           约束是单一字符的代码,约束代码如下表所示:
+
+           约束            描述
+            a          使用%eax,%ax或者%al寄存器
+            b          使用%ebx,%bx或者%bl寄存器
+            c          使用%ecx,%cx或者%cl寄存器
+            d          使用%edx,%dx或者%dl寄存器
+            S          使用%esi或者%si寄存器
+            D          使用%edi或者%di寄存器
+            r          使用任何可用的通用寄存器
+            q          使用%eax,%ebx,%ecx或者%edx寄存器之一
+            A          对于64位值使用%eax和%edx寄存器
+            f          使用浮点寄存器
+            t          使用第一个(顶部的)浮点寄存器
+            u          使用第二个浮点寄存器
+            m          使用变量的内存地址
+            o          使用偏移内存位置
+            V          只使用直接内存位置
+            i          使用立即数值
+            n          使用值已知的立即数值
+            g          使用任何可用的寄存器或者内存位置
+
+            除了这些约束之外,输出值还包含一个约束修饰符,它指示编译器如何处理输
+            出值,可以使用的输出修饰符如下表所示:
+
+            输出修饰符           描述
+                +           可以读取和写入操作
+                =           只能写入操作
+                %           如果必要,操作数可以和下一个操作数切换
+                &           在内联函数完成之前,可以删除或者重新使用操作数
+
+            一个例子:
+            asm("assembly code":"=a"(result):"d"(data1),"c"(data2));
+            把C变量data1存放到EDX寄存器中,把data2存放到ECX寄存器中,内联汇编代码
+            的结果将存放在EAX寄存器中,然后传送到result变量中
+[范例]
+#incluce <stdio.h>
+
+int main(void)
+{
+     int data1 = 4;
+     int data2 = 5;
+     int result = 0;
+     asm("imull %%ebx, %%eax"
+          :"=a"(result)
+          :"b"(data1),"a"(data2));
+     printf("%d\n",result);
+     return 0;
+}
+
+__%movq>传送MMX整数
+[指令格式] movq source, destination
+[指令说明] 其中source和destination可以是MMX寄存器、SSE寄存器或者是64位内存位置
+           (但是不能再内存位置之间传送MMX整数)
+           多媒体拓展(Multimedia Extension, MMX)技术是在奔腾MMX和奔腾II处理器
+           中引入的,它提供三种新的整数类型:
+           64位打包字节整数
+           64位打包字整数
+           64位打包双字整数
+           (在奔腾处理器上,MMX寄存器被映射到现有的FPU寄存器)
+[范例]
+.section .data
+value1:
+     .int 1, -1
+value2:
+     .byte 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88
+.section .text
+.globl _start
+_start:
+     movq value1, %mm0
+     movq value2, %mm1
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%movdqa>传送SSE整数
+[指令格式] movdqa source, destination
+           movdqu source, destination
+[指令说明] 流化SIMD拓展(Streaming SIMD Extension,SSE)技术提供用于处理打包数据
+           的8个128位XMM寄存器(名为XMM0到XMM7)
+           SSE2技术(奔腾4处理器中引入的)提供4种额外的打包带符号整数数据类型:
+           128位打包字节整数
+           128位打包字整数
+           128位打包双字整数
+           128位打包四字整数
+           movdqa和movdqu指令用于把128位数据传送到XMM寄存器中,或者在XMM寄存器
+           之间传送数据。
+           助记符的A和U部分代表对准和不对准,它们表示数据是如何存储在内存中的
+           对于对准16字节边界的数据,就是用A选项,否则,就是用U选项
+           其中source和destination可以是SSE 128位寄存器或者128位的内存位置
+           (但是不能在两个内存位置之间传送数据),当使用对准数据时,SSE指令执行的
+           更快,如果程序对未对准的数据使用movdqa指令,就会造成硬件异常
+[范例]
+.section .data
+value1:
+     .int 1, -1, 0, 34
+value2:
+     .quad 1, -1
+.section .text
+.globl _start
+_start:
+     movdqu value1, %xmm0
+     movdqu value2, %xmm1
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%movdqu>传送SSE整数
+fsp:goto movdqa
+
+__%fbld>传送BCD值
+[指令格式] fbld source
+[指令说明] fbld指令用于把打包80位BCD值传送到FPU寄存器堆栈中
+           其中source是80位内存位置
+[指令格式] fbstp destination
+[指令说明] fbstp指令用于把st0寄存器中的值传送到destination内存位置中
+
+[范例]
+.section .data
+value1:
+     .byte 0x34, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+value2:
+     .int 2
+.section .text
+.globl _start
+_start:
+     fbld value1
+     fimul value2
+     fbstp value1
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%fbstp>传送BCD值
+fsp:goto fbld
+
+__%fld>传送浮点值
+[指令格式] fld source
+           fst destination
+[指令说明] 其中source可以是32位、64位或者80位内存位置
+           GNU汇编使用flds指令加载单精度浮点数,而使用fldl指令加载双精度浮点数
+           (fldt 用于加载80-bit格式,fstpt 用于存储80-bit格式
+           https://sourceware.org/binutils/docs-2.32/as/i386_002dFloat.html)
+           fst指令用于获取FPU寄存器堆栈顶部的值,并且把这个值存放到内存位置中
+           对于单精度浮数字使用的指令是fsts,双精度数字使用的指令是fstl
+
+           预置的浮点值:
+           指令           描述
+           fld1           把+1.0压入FPU堆栈中
+           fldl2t         把10的对数(底数2)压入FPU堆栈中
+           fldl2e         把e的对数(底数2)压入FPU堆栈中
+           fldpi          把pi的值压入FPU堆栈中
+           fldlg2         把2的对数(底数10)压入FPU堆栈中
+           fldln2         把2的对数(底数e)压入FPU堆栈中
+           fldz           把+0.0压入FPU堆栈中
+[范例]
+.section .data
+value1:
+     .float 3.1415
+value2:
+     .double 5.6789
+.section .bss
+     .lcomm data, 8
+.section .text
+.globl _start
+_start:
+     flds value1
+     fldl value2
+     fstl data
+
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%fst>传送浮点值
+fsp:goto fld
+
+__%fild>传送整数值
+[指令格式] fild source
+           fist destination
+[指令说明] fild 用于把一个整数加载到FPU寄存器堆栈中
+           在as 2.28版本中如下定义:
+           filds 加载单字整数(16bit)
+           fildl 加载双字整数(32bit) (此处与书中191页中有出入)
+           fildq 加载四字整数(64bit)
+
+           fists/fistps 存储单字整数
+           fildl/fildpl 存储双字整数
+           fildq/fildpq 存储四字整数
+
+[范例]
+.section .data
+value1:
+    .int 12345
+value2:
+    .int 2
+output:
+    .asciz "%d\n"
+.section .text
+.globl _start
+_start:
+    finit
+    fildl value1  # 加载双字12345数值
+    fimull value2 # 对12345乘以2
+    subl $4, %esp # 留出4字节的空间
+    fistpl (%esp) # 弹出24690
+    pushl $output
+    call printf
+    addl $8, %esp
+
+    pushl $0
+    call exit
+
+__%fist>存储整数值
+fsp:goto fild
+
+__%fstsw>存储FPU状态字
+[指令格式] fstsw destination
+[指令说明] fstsw 指令用于存储FPU的状态字
+           destination可以是2字节的内存,也可以是ax寄存器
+
+           状态位           描述
+            0           非法操作异常标志
+            1           非规格化操作数异常标志
+            2           除数为零异常标志
+            3           溢出异常标志
+            4           下溢异常标志
+            5           精度异常标志
+            6           堆栈错误
+            7           错误汇总状态
+            8           条件代码位0 (C0)
+            9           条件代码位1 (C1)
+            10          条件代码位2 (C2)
+            11-13       堆栈顶部指针
+            14          条件代码位3 (C3)
+            15          FPU繁忙标志
+[范例]
+.section .bss
+    .lcomm status, 2
+.section .text
+.globl _start
+_start:
+     fstsw %ax
+     fstsw status
+
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%fstcw>存储FPU控制字
+[指令格式] fstcw destination
+           fldcw source
+[指令说明] fstcw 指令把控制寄存器的设置加载到2字节的内存中
+           fldcw 指令把2字节的内存值加载到控制寄存器中
+
+           控制位            描述
+             0           非法操作异常掩码
+             1           非法规格化操作数异常掩码
+             2           除数为零异常掩码
+             3           溢出异常掩码
+             4           下溢异常掩码
+             5           精度异常掩码
+             6-7         保留
+             8-9         精度控制
+             10-11       舍入控制
+             12          无穷大控制
+             13-15       保留
+
+           精度控制位可以设置FPU中用于数学计算的浮点精度:
+           00  -  单精度     (24位有效位)
+           01  -  未使用
+           10  -  双精度     (53位有效位)
+           11  -  拓展双精度 (64位有效位)
+           默认情况下,FPU的精度被设置为拓展双精度
+
+           舍入控制位可以设置FPU如何舍入浮点计算结果
+           00  -  舍入到最近值
+           01  -  向下舍入 (向无穷大负值)
+           10  -  向上舍入 (向无穷大正值)
+           11  -  向零舍入
+           默认情况下,舍入控制位被设置为舍入到最近值
+
+__%fldcw>加载FPU控制字
+fsp:goto fstcw
+
+__%fadd>浮点加法
+[注意]     https://sourceware.org/binutils/docs/as/i386_002dBugs.html
+
+[指令说明] fadd source 内存中单精度或双精度浮点值和st0寄存器相加,结果存储到st(0)
+           fadd %st(x), %st(0) :st(0)和st(0)相加,结果存储到st(0)中
+           fadd %st(0), %st(x) :st(0)和st(x)相加,结果存储到st(x)中
+           faddp %st(0), %st(x):st(0)和st(x)相加,结果存储到st(x)中,并弹出st(0)
+           faddp  st(0)和st(1)相加,结果存储到st(1)中,并弹出st(0)
+           fiadd source 16位或32位整数值和st(0)相加,结果存储到st(0)中
+
+           浮点值大小控制:
+           fadds 单精度浮点数,faddl 双精度浮点数
+
+           整数值大小控制:
+           fiadds 16bit整数, fiaddl 32bit整数
+[范例]
+.sectino .data
+value:
+    .int 12345
+output:
+    .asciz "%d\n"
+.section .text
+.globl _start
+_start:
+     finit
+     fildl value
+     fiaddl value
+     subl $4, %esp
+     fistpl (%esp)
+     pushl $output
+     call printf
+     addl $8, %esp
+
+     pushl $0
+     call exit
+
+__%fiadd>整数加法
+fsp:goto fadd
+
+__%fsub>浮点减法
+[注意]     https://sourceware.org/binutils/docs/as/i386_002dBugs.html
+
+[指令说明] fsub source 从st(0)中减去内存中单精度或双精度浮点值,结果存储到st(0)
+           fsub %st(x), %st(0) :从st(0)中减去st(x),结果存储到st(0)中
+           fsub %st(0), %st(x) :从st(0)中减去st(x),结果存储到st(x)中
+           fsubp %st(0), %st(x):从st(0)中减去st(x),结果存储到st(x)中,并弹出st(0)
+           fsubp 从st(0)中减去st(1),结果存储到st(1)中,并弹出st(0)
+           fisub source 从st(0)中减去内存中16位或32位整数值,结果存储到st(0)
+
+           fsubr source 从内存中减去st(0)中的浮点值,结果存储在st(0)
+           fsubr %st(x), %st(0) :从st(x)中减去st(0),结果存储在st(0)中
+           fsubr %st(0), %st(x) :从st(x)中减去st(0),结果存储在st(x)中
+           fsubrp %st(0), %st(x):从st(x)中减去st(0),结果存储在st(x),并弹出st(0)
+           fsubrp 从st(1)中减去st(0),结果存储在st(x),并弹出st(0)
+           fisubr source 从内存中减去st(0),结果存储在st(0)中
+
+           数值大小控制参考fadd指令
+
+__%fsubr>浮点减法
+fsp:goto fsub
+
+__%fisub>整数减法
+fsp:goto fsub
+
+__%fdiv>浮点除法
+[注意]     https://sourceware.org/binutils/docs/as/i386_002dBugs.html
+
+[指令说明] fdiv source 将st(0)除以内存中单精度或双精度浮点数,结果存储在st(0)
+           fdiv %st(x), %st(0) :将st(0)除以st(x),结果存储在st(0)中
+           fdiv %st(0), %st(x) :将st(0)除以st(x),结果存储在st(x)中
+           fdivp %st(0), %st(x):将st(0)除以st(x),结果存储在st(x)中,并弹出st(0)
+           fdivp 将st(0)除以st(1),结果存储在st(1)中,并弹出st(0)
+           fidiv source 将st(0)除以内存中16位或32位整数,结果存储在st(0)中
+
+           fdivr source 将内存中的浮点值除以st(0),结果存储在st(0)
+           fdivr %st(x), %st(0) :将st(x)除以st(0),结果存储在st(0)中
+           fdivr %st(0), %st(x) :将st(x)除以st(0),结果存储在st(x)中
+           fdivrp %st(0), %st(x):将st(x)除以st(0),结果存储在st(x)中,并弹出st(0)
+           fdivrp 将st(1)除以st(0),结果存储在st(1)中,并弹出st(0)
+           fidiv source 将内存中16位或32位整数除以st(0),结果存储在st(0)中
+
+           数值大小控制参考fadd指令
+
+__%fdivr>浮点除法
+fsp:goto fdiv
+
+__%fidiv>整数除法
+fsp:goto fdiv
+
+__%fmul>浮点乘法
+[注意]     https://sourceware.org/binutils/docs/as/i386_002dBugs.html
+
+[指令说明] fmul source 将st(0)乘以内存中的单精度或双精度浮点值,结果存储在st(0)
+           fmul %st(x), %st(0) :将st(0)乘以st(x),结果存储在st(0)中
+           fmul %st(0), %st(x) :将st(0)乘以st(0),结果存储在st(x)中
+           fmulp %st(0), %st(x):将st(0)乘以st(x),结果存储在st(x)中,并弹出st(0)
+           fmulp 将st(0)乘以st(1),结果存储在st(1)中,并弹出st(0)
+           fimul source 将st(0)乘以内存中16位或32位整数值,结果存储在st(0)
+
+           数值大小控制参考fadd指令
+
+__%fimul>整数乘法
+fsp:goto fmul
+
+__%fcom>比较浮点值
+[指令说明] fcom         比较st(0)寄存器和st(1)寄存器
+           fcom st(x)   比较st(0)寄存器和另一个FPU寄存器
+           fcom source  比较st(0)寄存器和32位或者64位内存值
+           fcomp        比较st(0)寄存器和st(1)寄存器,并且弹出堆栈
+           fcomp st(x)  比较st(0)寄存器和另一个FPU寄存器,并且弹出堆栈
+           fcomp source 比较st(0)寄存器和32位或者64位内存值,并且弹出堆栈
+           fcompp       比较st(0)寄存器和st(1)寄存器,并且两次弹出堆栈
+           ftst         比较st(0)寄存器和0.0
+
+           条件       C3       C2       C0
+         st(0)>SRC    0        0        0
+         st(0)<SRC    0        0        1
+         st(0)=SRC    1        0        0
+         Unordered    1        1        1
+[范例]
+.section .data
+value1:
+    .float 1234.5
+value2:
+    .float 12.3
+.section .text
+.globl _start
+_start:
+    finit
+    flds value1
+    fcoms value2
+    fstsw   # 弹出FPU的状态寄存器到AX中
+    sahf    # 将AH寄存器加载到flags寄存器中
+    ja greater
+    jb lessthan
+    movl $1, %eax
+    movl $0, %ebx
+    int $0x80
+greater:
+    movl $1, %eax
+    movl $1, %ebx
+    int $0x80
+lessthan
+    movl $1, %eax
+    movl $2, %ebx
+    int $0x80
+
+__%fcomp>比较浮点值
+fsp:goto fcom
+
+__%ftst>比较浮点值
+fsp:goto fcom
+
+__%fcompp>比较浮点值
+fsp:goto fcom
+
+__%fcomi>比较浮点值
+[指令说明] fcomi   比较st(0)寄存器和st(x)寄存器
+           fcomip  比较st(0)寄存器和st(x)寄存器,并且弹出堆栈
+           fucomi  在比较之前检查无序值
+           fucomip 在比较之前检查无序值,并且在比较之后弹出堆栈
+
+           fcomi指令在比较之后不用执行fstsw和sahf指令
+           fcomi指令的局限指出在于它们只能比较FPU寄存器中的两个值,不能比较FPU
+           寄存器和内存中的值
+           fucomi指令和fucomip指令确保被比较的值是合法的浮点数(使用FPU标记
+           寄存器),如果出现无序值,就会抛出异常
+[范例]
+.section .data
+value1:
+     .float 1234.5
+value2:
+     .float 12.3
+.section .text
+.globl _start
+_start:
+     finit
+     flds value1
+     flds value2
+     fcomi %st(1), %st(0)
+     ja greater
+     jb lessthan
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+greater:
+     movl $1, %eax
+     movl $1, %ebx
+     int $0x80
+lessthan:
+     movl $1, %eax
+     movl $2, %ebx
+     int $0x80
+
+__%fucomi>比较浮点数
+fsp:goto fcomi
+
+__%fcmov>浮点条件传送
+[指令格式] fcmovxx source, destination
+           其中source是st(x)寄存器,destination是st(0)寄存器
+[指令说明] fcmovb   如果st(0)小于st(x),则进行传送
+           fcmove   如果st(0)等于st(x),则进行传送
+           fcmovbe  如果st(0)小于或者等于st(x),则进行传送
+           fcmovu   如果st(0)无序,则进行传送
+           fcmovnb  如果st(0)不小于st(x),则进行传送
+           fcmovne  如果st(0)不等于st(x),则进行传送
+           fcmovnbe 如果st(0)不小于或等于st(x),则进行传送
+           fcmovnu  如果st(0)非无序,则进行传送
+[范例]
+.section .data
+value1:
+     .float 1234.5
+value2:
+     .float 12.3
+.section .text
+.globl _start
+_start:
+     finit
+     flds value1
+     flds value2
+     fcomi %st(1), %st(0)
+     fcmovb %st(1), %st(0)
+
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%fstenv>保存FPU环境
+[指令格式] fstenv destination
+[指令说明] fstenv指令用于把FPU的环境存储到一个内存块中,以下的FPU寄存器将被存储
+           控制寄存器
+           状态寄存器
+           标记寄存器
+           FPU指令指针偏移量
+           FPU数据指针
+           FPU最后执行的操作码
+           这些值存储在一个28字节的内存块中
+[fldenv]
+           fldenv指令用于把内存块的值加载回FPU环境中
+           fstenv指令不会保存FPU的数据寄存器,为了完整的保存数据在内的
+           完整FPU环境,必须使用fsave指令
+[fsave]
+           fsave指令把所有FPU寄存器复制到一个108字节的内存位置,然后初始化FPU
+           状态。
+[frstor]
+           frstor指令恢复所有FPU寄存器(包括数据寄存器),都被恢复为执行fsave指令
+           时的状态
+
+__%fldenv>恢复FPU环境
+fsp:goto fstenv
+
+__%fsave>保存完整FPU环境
+fsp:goto fstenv
+
+__%frstor>恢复完整FPU环境
+fsp:goto fstenv
+
+__%movaps>传送SSE浮点值
+[指令集] movaps      把4个对准的打包单精度值传送到XMM寄存器或者内存
+         movups      把4个不对准的打包单精度值传送到XMM寄存器或者内存
+         movss       把1个单精度值传送到内存或者寄存器的低双字
+         movlps      把2个单精度值传送到内存或者寄存器的低四字
+         movhps      把2个单精度值传送到内存或者寄存器的高四字
+         movlhps     把2个单精度值从低四字传送到高四字
+         movhlps     把2个单精度值从高四字传送到低四字
+[范例]
+.section .data
+value:
+    .float 34.45, 56.23, 3.14125, 55.66
+.section .bss
+    .lcomm buffer, 16
+.section .text
+.globl _start
+_start:
+     movups value, %xmm0
+     movups %xmm0, %xmm1
+     movups %xmm1, buffer
+
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%movapd>传送SSE2浮点值
+[指令集] movapd   把2个对准的双精度值传送到XMM寄存器或者内存
+         movupd   把2个不对准的双精度值传送到XMM寄存器或者内存
+         movsd    把1个双精度值传送到内存或者寄存器的低四字
+         movhpd   把1个双精度值传送到内存或者寄存器的高四字
+         movlpd   把1个双精度值传送到内存或者寄存器的低四字
+[范例]
+.section .data
+value:
+    .double 34.56, 56.72
+.section .bss
+    .lcomm buffer, 16
+.section .text
+    movupd value, %xmm0
+    movupd %xmm0, %xmm1
+    movupd %xmm0, buffer
+
+    movl $1, %eax
+    movl $0, %ebx
+    int $0x80
+
+__%movshdup>SSE3指令
+[指令格式] movshdup source, destination
+           movsldup source, destination
+           movddup  source, destination
+[指令说明] movshdup 从内存或者XMM寄存器传送128位值,复制第2个和第4个32位元素
+           因此,传送由32位单精度浮点值DCBA构成的数据元素将创建由DDBB构成的
+           128位打包单精度浮点值
+           movsldup 从内存或者XMM寄存器传送128位值,复制第1个和第3个32位元素
+           因此,传送由32位单精度浮点值DCBA构成的数据元素将创建由CCAA构成的
+           128位打包单精度浮点值
+           movddup  从内存或者XMM寄存器传送64位双精度浮点值,把它复制到128位
+           XMM寄存器中,因此,传送由64位双精度浮点值A构成的数据元素将创建128位
+           打包双精度浮点值AA
+[范例]
+.section .data
+value:
+    .int 0xaaaaaaaa, 0xbbbbbbbb, 0xcccccccc, 0xdddddddd
+.section .text
+.globl _start
+_start:
+     movups value, %xmm0    # %xmm0: 0xddddddddccccccccbbbbbbbbaaaaaaaa
+     movshdup %xmm0, %xmm1  # %xmm1: 0xddddddddddddddddbbbbbbbbbbbbbbbb
+     movsldup %xmm0, %xmm2  # %xmm2: 0xccccccccccccccccaaaaaaaaaaaaaaaa
+
+     movl $1, %eax
+     movl $0, %ebx
+     int $0x80
+
+__%movsldup>SSE3指令
+fsp:goto movshdup
+
+__%movddup>SSE3指令
+fsp:goto movshdup
+
+__%cvtdq2pd>转换指令
+[指令集] cvtdq2pd            打包双字整数到打包双精度FP (XMM)
+         cvtdq2ps            打包双字整数到打包单精度FP (XMM)
+         cvtpd2dq            打包双精度FP到打包双字整数 (XMM)
+         cvtpd2pi            打包双精度FP到打包双字整数 (MMX)
+         cvtpd2ps            打包双精度FP到打包单精度FP (XMM)
+         cvtpi2pd            打包双字整数到打包双精度FP (XMM)
+         cvtpi2ps            打包双字整数到打包单精度FP (XMM)
+         cvtps2dq            打包单精度FP到打包双字整数 (XMM)
+         cvtps2pd            打包单精度FP到打包双精度FP (XMM)
+         cvtps2pi            打包单精度FP到打包双字整数 (MMX)
+         cvttpd2pi           打包双精度FP到打包双字整数 (MMX 截断)
+         cvttpd2dq           打包双精度FP到打包双字整数 (XMM 截断)
+         cvttps2dq           打包单精度FP到打包双字整数 (XMM 截断)
+         cvttps2pi           打包单精度FP到打包双字整数 (MMX 截断)
+[范例]
+.section .data
+.align 16
+value:
+    .float 12.34, 34.56, 56.78, 90.56
+.section .text
+.globl _start
+_start:
+    cvtps2dq value, %xmm0
+    cvttps2dq value, %xmm0
+
+    movl $1, %eax
+    movl $0, %ebx
+    int $0x80
+
+__%aaa>不打包BCD运算
+[指令格式] aaa  调整加法操作的结果
+           aas  调整减法操作的结果
+           aam  调整乘法操作的结果
+           aad  准备除法操作的被除数
+[指令说明] 这些指令必须和一般的无符号整数指令add、adc、sub、sbb、mul和div组合
+           在一起使用。
+           aaa、aas和aam指令在它们各自的操作之后使用,把二进制结果转换为不打包
+           BCD格式,aad指令有些不同,在div指令之前使用它,用于准备被除数以便生成
+           不打包BCD结果。
+           这些指令都使用一个隐含的操作数AL寄存器
+           aaa、aas和aam指令假设前一个操作数的结果存放在AL寄存器中,并且把这个
+           值转换为不打包BCD格式
+           aad指令假设被除数以不打包BCD格式存放在AX寄存器中,并且把它转换为div
+           指令要处理的二进制格式。结果是正确的一个不打包BCD值,AL寄存器中的商
+           和AH寄存器中的余数(按照不打包BCD格式)
+[范例]
+.section .data
+value1:
+    .byte 0x08, 0x05, 0x06, 0x05
+value2:
+    .byte 0x02, 0x07, 0x03, 0x05
+.section .bss
+    .lcomm result, 6
+.section .text
+.globl _start
+_start:
+    xor %edi, %edi
+    movl $4, %ecx
+    clc
+    loop1:
+        movb value1(,%edi,1), %al
+        adcb value2(,%edi,1), %al
+        aaa
+        movb %al, result(,%edi,1)
+        inc %edi
+    loop loop1
+    adcb $0, result(,%edi,1) # 加上最后一个进位(如果有的话)
+
+    movl $1, %eax
+    movl $0, %ebx
+    int $0x80
+
+__%aas>不打包BCD运算
+fsp:goto aaa
+
+__%aam>不打包BCD运算
+fsp:goto aaa
+
+__%aad>不打包BCD运算
+fsp:goto aaa
+
+__%daa>打包BCD运算
+[指令格式] daa   调整add或者adc指令的结果
+           das   调整sub或者sbb指令的结果
+[指令说明] 这些指令执行的功能和aaa以及aas指令相同,但是操作对象是打包BCD值
+           它们也使用位于AL寄存器中的隐含操作数,并且把转换结果存放在AL寄存器中
+           把进位位存放在AH寄存器和辅助进位标志中
+[范例]
+.section .data
+value1:
+    .byte 0x11, 0x15, 0x16, 0x05
+value2:
+    .byte 0x22, 0x27, 0x23, 0x05
+.section .bss
+    .lcomm result, 6
+.section .text
+.globl _start
+_start:
+    xor %edi, %edi
+    movl $4, %ecx
+    clc
+    loop1:
+        movb value2(,%edi,1), %al
+        movb value1(,%edi,1), %bl
+        sbbb %bl, %al
+        das
+        movb %al, result(,%edi,1)
+        inc %edi
+    loop loop1
+    sbbb $0, result(,%edi,1)
+
+    movl $1, %eax
+    movl $0, %ebx
+    int $0x80
+
+__%das>打包BCD运算
+fsp:goto daa
+
+__%and>布尔逻辑
+[指令格式] and  按位与
+           not  按位取反
+           or   按位或
+           xor  按位异或
+[指令说明] and、or和xor指令使用相同的格式
+           and source, destination
+           其中source可以是8位、16位或者32位立即值、寄存器或内存中的值
+           destination可以是8位、16位或者32位寄存器或内存中的值
+           (不能同时使用内存值作为源和目标)
+           not指令使用单一操作数,它既是源值,也是目标结果位置
+
+__%not>布尔逻辑
+fsp:goto and
+
+__%or>布尔逻辑
+fsp:goto and
+
+__%xor>布尔逻辑
+fsp:goto and
